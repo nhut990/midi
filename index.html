@@ -8,8 +8,8 @@
         body { font-family: -apple-system, sans-serif; text-align: center; padding: 20px; background-color: #f5f5f7; color: #333; }
         .container { background: white; padding: 30px 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
         h2 { margin-top: 0; color: #007aff; }
-        #status { margin-bottom: 20px; font-size: 14px; color: #666; min-height: 20px; }
-        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #007aff; color: white; border: none; border-radius: 8px; width: 100%; margin-bottom: 10px; font-weight: bold;}
+        #status { margin-bottom: 20px; font-size: 14px; color: #666; min-height: 40px; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #007aff; color: white; border: none; border-radius: 8px; width: 100%; margin-bottom: 10px; font-weight: bold; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         input[type="file"] { display: none; }
         .file-btn { display: block; padding: 12px; background-color: #34c759; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
@@ -21,20 +21,17 @@
         <h2>Trình phát MIDI</h2>
         <p id="status">Bước 1: Bấm nút bên dưới để bật âm thanh</p>
         
-        <!-- Nút khởi động âm thanh (Bắt buộc trên Safari) -->
         <button id="initBtn">Khởi động âm thanh</button>
         
-        <!-- Khu vực chọn file (bị ẩn đi) -->
         <input type="file" id="midi_input" accept=".mid, .rmi" disabled>
-        
-        <!-- Nút giả để kích hoạt chọn file -->
         <label for="midi_input" id="fileLabel" class="file-btn" style="display: none;">Chọn file MIDI</label>
         
         <button id="playBtn" disabled style="display: none;">Phát nhạc</button>
     </div>
 
     <script type="module">
-        import { Synthetizer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@latest/+esm';
+        // 1. Dùng đúng tên lớp mới là WorkletSynthesizer
+        import { WorkletSynthesizer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@latest/+esm';
         import { Sequencer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@latest/+esm';
 
         const statusEl = document.getElementById('status');
@@ -46,29 +43,28 @@
         let synth;
         let seq;
 
-        // Hàm khởi tạo âm thanh khi người dùng bấm nút
         initBtn.addEventListener('click', async () => {
+            // 2. Tạo và resume AudioContext NGAY LẬP TỨC trong sự kiện click (chuẩn Safari)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
             initBtn.disabled = true;
             statusEl.textContent = "Đang tải âm thanh (SF2)... Vui lòng chờ...";
             
             try {
-                // Sử dụng link SF2 từ CDN của dự án gốc
-                const sfUrl = 'https://cdn.jsdelivr.net/gh/spessasus/SpessaSynth@master/soundfont.sf2'; 
+                // Link SF2 dự phòng (dung lượng lớn hơn nhưng ổn định trên CDN)
+                const sfUrl = 'https://cdn.jsdelivr.net/gh/mrbumpy409/GeneralUser-GS@main/GeneralUser-GS.sf2'; 
                 const sfBuffer = await (await fetch(sfUrl)).arrayBuffer();
 
-                // Tạo AudioContext
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-
                 statusEl.textContent = "Đang tải bộ xử lý...";
-                // Trỏ đến file worklet bạn đã up lên
                 const workletUrl = './spessasynth_processor.min.js';
                 await audioCtx.audioWorklet.addModule(workletUrl);
 
-                // Khởi tạo Synthetizer
-                synth = new Synthetizer(audioCtx.destination, sfBuffer);
+                // 3. Khởi tạo WorkletSynthesizer
+                synth = new WorkletSynthesizer(audioCtx.destination, sfBuffer);
 
-                // Hiện giao diện chọn file
                 statusEl.textContent = "Sẵn sàng! Hãy chọn file MIDI.";
                 initBtn.style.display = 'none';
                 fileLabel.style.display = 'block';
@@ -81,7 +77,6 @@
             }
         });
 
-        // Xử lý khi chọn file
         fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file || !synth) return;
@@ -101,7 +96,6 @@
             }
         });
 
-        // Xử lý nút Phát
         playBtn.addEventListener('click', () => {
             if (seq) {
                 seq.play();
