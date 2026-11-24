@@ -1,924 +1,1004 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình Phát Nhạc MIDI - SpessaSynth</title>
-    <!-- Tải Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #090d16;
-            color: #f1f5f9;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpessaSynth Web MIDI Player</title>
+  <style>
+    :root {
+      --bg: #070d19;
+      --card: #0f172a;
+      --card-2: #162238;
+      --border: #24344d;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --warn: #fbbf24;
+      --danger: #f87171;
+    }
 
-        /* Tùy chỉnh thanh trượt (Range Slider) */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            cursor: pointer;
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        input[type="range"]::-webkit-slider-runnable-track {
-            height: 6px;
-            border-radius: 999px;
-            background: #1e293b;
-        }
+    body {
+      margin: 0;
+      padding: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
 
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #38bdf8;
-            margin-top: -5px;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-            transition: transform 0.15s ease, background-color 0.15s ease;
-        }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-            background: #7dd3fc;
-        }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
 
-        /* Hiệu ứng thanh hoạt động kênh MIDI */
-        .activity-bar {
-            transition: width 0.08s ease-out, background-color 0.15s ease;
-        }
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
 
-        /* Thanh cuộn tùy chỉnh */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-    </style>
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .subtitle {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: #cbd5e1;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="url"],
+    input[type="range"] {
+      accent-color: var(--accent);
+    }
+
+    input[type="url"] {
+      flex: 1;
+      min-width: 210px;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    button,
+    .file-label {
+      padding: 9px 14px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    button:hover:not(:disabled),
+    .file-label:hover {
+      background: #1e2f4d;
+      border-color: #3b5580;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: #0284c7;
+      border-color: #0ea5e9;
+      color: #fff;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: #0369a1;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .progress-wrap {
+      margin-top: 12px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--bg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0ea5e9, #22c55e);
+      transition: width 0.12s linear;
+    }
+
+    .progress-meta {
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-log {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: pre-line;
+      word-break: break-word;
+    }
+
+    .dropzone {
+      border: 2px dashed #2b3f5e;
+      border-radius: 12px;
+      padding: 22px 14px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.55);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .dropzone p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .midi-name {
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .transport {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .seek-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 12px;
+    }
+
+    .seek-row input[type="range"] {
+      flex: 1;
+    }
+
+    .sliders {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .slider-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .slider-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+
+    .slider-box input[type="range"] {
+      width: 100%;
+    }
+
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .ch-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .ch-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    .ch-inst {
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .vel-bar {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      overflow: hidden;
+    }
+
+    .vel-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.06s linear;
+    }
+
+    .ch-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ch-btns button {
+      padding: 4px 8px;
+      font-size: 11px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .ch-btns button.active-mute {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fecaca;
+    }
+
+    .ch-btns button.active-solo {
+      background: #14532d;
+      border-color: #22c55e;
+      color: #bbf7d0;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 lg:p-8 selection:bg-sky-500/30 selection:text-sky-200">
-
-    <!-- Container chính -->
-    <div class="max-w-5xl w-full mx-auto space-y-6">
-
-        <!-- Header -->
-        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-            <div class="flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
-                    <!-- Icon nốt nhạc SVG -->
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                        SpessaSynth Web MIDI Player
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400">
-                        Bộ tổng hợp âm thanh GeneralUser-GS & AudioWorklet
-                    </p>
-                </div>
-            </div>
-
-            <!-- Trạng thái Engine -->
-            <div class="flex items-center gap-2 self-start sm:self-center bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
-                <span id="engineStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-                <span id="engineStatusText" class="text-xs font-medium text-slate-300">Đang chờ khởi tạo...</span>
-            </div>
-        </header>
-
-        <!-- Khu vực tải SoundFont & Processor -->
-        <section id="loaderCard" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Tài nguyên SoundFont (GeneralUser-GS.sf2)
-                    </h2>
-                    <p id="loaderSubtext" class="text-xs text-slate-400 mt-0.5">
-                        Tự động tải bộ tiếng nhạc cụ (~30 MB) từ GitHub Release...
-                    </p>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-2">
-                    <button id="retryLoadBtn" class="hidden px-3 py-1.5 text-xs font-medium rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition">
-                        Thử tải lại từ Link
-                    </button>
-                    <label class="cursor-pointer px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition inline-flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                        Chọn file .SF2 trên máy
-                        <input type="file" id="sf2FileInput" accept=".sf2,.sf3" class="hidden">
-                    </label>
-                </div>
-            </div>
-
-            <!-- Thanh tiến trình tải -->
-            <div class="space-y-1.5">
-                <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
-                    <div id="downloadProgressBar" class="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all duration-150" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between text-xs text-slate-400 font-mono">
-                    <span id="downloadDetailText">0.00 MB / -- MB</span>
-                    <span id="downloadPercentText">0%</span>
-                </div>
-            </div>
-
-            <!-- Hộp thông báo lỗi / lưu ý CORS nếu có -->
-            <div id="errorAlertBox" class="hidden bg-rose-950/50 border border-rose-800/70 rounded-xl p-3.5 text-xs text-rose-200 space-y-1.5">
-                <div class="font-semibold flex items-center gap-1.5 text-rose-300">
-                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span id="errorTitle">Không thể tải tự động từ GitHub</span>
-                </div>
-                <p id="errorMessage" class="text-rose-200/90 leading-relaxed"></p>
-            </div>
-        </section>
-
-        <!-- Khu vực nạp file MIDI & Điều khiển phát nhạc -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <!-- Cột trái: Nạp file MIDI (5 cột) -->
-            <section class="lg:col-span-5 flex flex-col">
-                <div id="midiDropZone" class="flex-1 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-700/80 hover:border-sky-500/70 bg-slate-900/60 hover:bg-slate-900/90 rounded-2xl p-6 transition-all cursor-pointer group">
-                    <input type="file" id="midiFileInput" accept=".mid,.midi,.kar,.rmi" class="hidden">
-                    
-                    <div class="w-14 h-14 rounded-2xl bg-slate-800/90 group-hover:bg-sky-500/20 border border-slate-700 group-hover:border-sky-500/40 flex items-center justify-center mb-4 transition">
-                        <svg class="w-7 h-7 text-sky-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                    </div>
-
-                    <h3 class="text-base font-semibold text-slate-200 group-hover:text-white">
-                        Kéo thả file MIDI vào đây
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-1 max-w-xs">
-                        Hoặc bấm để chọn file <span class="text-sky-400 font-medium">.mid, .midi, .kar</span> từ thiết bị của bạn
-                    </p>
-
-                    <div id="loadedFileBadge" class="hidden mt-4 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 text-xs font-medium max-w-full truncate">
-                        Chưa có bài hát
-                    </div>
-                </div>
-            </section>
-
-            <!-- Cột phải: Bảng điều khiển phát (7 cột) -->
-            <section class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-6">
-                
-                <!-- Thông tin bài hát hiện tại -->
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-sky-400">Đang phát</span>
-                        <span id="midiMetaBadge" class="text-xs text-slate-400 font-mono bg-slate-950 px-2.5 py-0.5 rounded-md border border-slate-800">
-                            -- BPM • -- Tracks
-                        </span>
-                    </div>
-                    <h2 id="songTitle" class="text-lg sm:text-xl font-bold text-white truncate">
-                        Chưa nạp file MIDI
-                    </h2>
-                    <p id="songSubtitle" class="text-xs text-slate-400 truncate">
-                        Hãy tải xong SoundFont và chọn file .mid để bắt đầu nghe nhạc
-                    </p>
-                </div>
-
-                <!-- Thanh tua thời gian (Seekbar) -->
-                <div class="space-y-2">
-                    <input type="range" id="seekSlider" min="0" max="100" step="0.1" value="0" disabled class="w-full disabled:opacity-40">
-                    <div class="flex justify-between text-xs font-mono text-slate-400">
-                        <span id="currentTimeText">00:00</span>
-                        <span id="totalTimeText">00:00</span>
-                    </div>
-                </div>
-
-                <!-- Các nút điều khiển chính -->
-                <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
-                    
-                    <!-- Nhóm nút Play / Pause / Stop / Loop -->
-                    <div class="flex items-center gap-2.5">
-                        <!-- Nút Play / Pause -->
-                        <button id="playPauseBtn" disabled class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-semibold text-sm flex items-center gap-2 shadow-lg shadow-sky-500/20 disabled:shadow-none transition cursor-pointer disabled:cursor-not-allowed">
-                            <svg id="playIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <svg id="pauseIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                            </svg>
-                            <span id="playPauseText">Phát nhạc</span>
-                        </button>
-
-                        <!-- Nút Stop -->
-                        <button id="stopBtn" disabled title="Dừng hẳn" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 border border-slate-700 transition cursor-pointer disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 6h12v12H6z"/>
-                            </svg>
-                        </button>
-
-                        <!-- Nút Lặp lại (Loop) -->
-                        <button id="loopBtn" title="Lặp lại bài hát" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Nhóm Âm lượng & Tốc độ -->
-                    <div class="flex flex-wrap items-center gap-4">
-                        <!-- Tốc độ phát -->
-                        <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800 px-2.5 py-1.5 rounded-xl">
-                            <span class="text-xs text-slate-400">Tốc độ:</span>
-                            <select id="speedSelect" class="bg-transparent text-xs font-semibold text-sky-400 focus:outline-none cursor-pointer">
-                                <option value="0.5" class="bg-slate-900">0.5x</option>
-                                <option value="0.75" class="bg-slate-900">0.75x</option>
-                                <option value="1" selected class="bg-slate-900">1.0x</option>
-                                <option value="1.25" class="bg-slate-900">1.25x</option>
-                                <option value="1.5" class="bg-slate-900">1.5x</option>
-                            </select>
-                        </div>
-
-                        <!-- Âm lượng tổng -->
-                        <div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-xl">
-                            <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                            </svg>
-                            <input type="range" id="volumeSlider" min="0" max="1.5" step="0.05" value="1" class="w-20 sm:w-24">
-                            <span id="volumeText" class="text-xs font-mono text-slate-300 w-9 text-right">100%</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="card header-row">
+      <div class="brand">
+        <div class="brand-icon">♪</div>
+        <div>
+          <h1>SpessaSynth Web MIDI Player</h1>
+          <p class="subtitle">AudioWorklet + GeneralUser-GS.sf2 qua Cloudflare Worker</p>
         </div>
-
-        <!-- Bảng hiển thị 16 kênh MIDI (Mixer & Visualizer) -->
-        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <span>Bộ trộn 16 Kênh MIDI (Mixer)</span>
-                        <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">GM / GS</span>
-                    </h3>
-                    <p class="text-xs text-slate-400">
-                        Theo dõi nhạc cụ từng kênh theo thời gian thực, bật/tắt tiếng (Mute) hoặc nghe riêng (Solo)
-                    </p>
-                </div>
-                <button id="unmuteAllBtn" class="self-start sm:self-center px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-                    Bật lại tất cả kênh
-                </button>
-            </div>
-
-            <!-- Lưới 16 kênh -->
-            <div id="channelsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <!-- Các thẻ kênh 1-16 sẽ được render tự động bằng JS -->
-            </div>
-        </section>
-
+      </div>
+      <div id="engineStatus" class="badge">
+        <span style="color:#fbbf24">●</span> Đang chờ khởi tạo...
+      </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="max-w-5xl w-full mx-auto mt-8 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-        <p>Sử dụng SpessaSynth WebAudio Synthesizer & GeneralUser-GS SoundFont</p>
-        <p>Mẹo: Bấm vào bất kỳ đâu trên trang nếu trình duyệt yêu cầu kích hoạt âm thanh</p>
-    </footer>
+    <!-- SoundFont Loader -->
+    <div class="card">
+      <div class="section-title">Tài nguyên SoundFont (.SF2)</div>
+      <div class="row">
+        <button id="reloadDefaultSfBtn" type="button" class="primary">Tải lại SF2 mặc định</button>
+        <label class="file-label" for="sfFileInput">Chọn file .SF2 trên máy</label>
+        <input id="sfFileInput" type="file" accept=".sf2,.sf3" />
+      </div>
 
-    <!-- Script chính sử dụng ES Modules -->
-    <script type="module">
-        // Import thư viện SpessaSynth từ CDN jsDelivr (tương thích với spessasynth_processor)
-        import { Synthetizer, Sequencer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@3.29.1/+esm';
+      <div class="row" style="margin-top:10px;">
+        <input
+          id="sfUrlInput"
+          type="url"
+          placeholder="Dán link .sf2 bất kỳ (https://...)"
+        />
+        <button id="loadSfUrlBtn" type="button">Tải từ link</button>
+      </div>
 
-        // Đường dẫn người dùng cung cấp
-        const PROCESSOR_URL = 'https://github.com/nhut990/midi/raw/refs/heads/main/spessasynth_processor.min.js';
-        const SOUNDFONT_URL = 'https://github.com/nhut990/files/releases/download/V1.0_SET_ORG/GeneralUser-GS.sf2';
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div id="sfProgressBar" class="progress-fill"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="sfProgressText">0.00 MB / -- MB</span>
+          <span id="sfProgressPct">0%</span>
+        </div>
+      </div>
+      <div id="sfStatusText" class="status-log">Đang chuẩn bị tải SoundFont từ Worker...</div>
+    </div>
 
-        // Danh sách tên 128 nhạc cụ chuẩn General MIDI (GM) để hiển thị thân thiện
-        const GM_INSTRUMENTS = [
-            "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano",
-            "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet",
-            "Celesta", "Glockenspiel", "Music Box", "Vibraphone",
-            "Marimba", "Xylophone", "Tubular Bells", "Dulcimer",
-            "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ",
-            "Reed Organ", "Accordion", "Harmonica", "Tango Accordion",
-            "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)",
-            "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics",
-            "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass",
-            "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2",
-            "Violin", "Viola", "Cello", "Contrabass",
-            "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani",
-            "String Ensemble 1", "String Ensemble 2", "Synth Strings 1", "Synth Strings 2",
-            "Choir Aahs", "Voice Oohs", "Synth Choir", "Orchestra Hit",
-            "Trumpet", "Trombone", "Tuba", "Muted Trumpet",
-            "French Horn", "Brass Section", "Synth Brass 1", "Synth Brass 2",
-            "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax",
-            "Oboe", "English Horn", "Bassoon", "Clarinet",
-            "Piccolo", "Flute", "Recorder", "Pan Flute",
-            "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina",
-            "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)",
-            "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)",
-            "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)",
-            "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)",
-            "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)",
-            "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)",
-            "Sitar", "Banjo", "Shamisen", "Koto",
-            "Kalimba", "Bagpipe", "Fiddle", "Shanai",
-            "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock",
-            "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal",
-            "Guitar Fret Noise", "Breath Noise", "Seashore", "Bird Tweet",
-            "Telephone Ring", "Helicopter", "Applause", "Gunshot"
-        ];
+    <!-- MIDI File Loader -->
+    <div class="card">
+      <div class="section-title">Nạp file MIDI (.MID / .MIDI / .KAR)</div>
+      <div id="midiDropzone" class="dropzone">
+        <strong>Kéo thả file MIDI vào đây hoặc bấm để chọn file</strong>
+        <p>Hỗ trợ định dạng .mid, .midi, .kar từ thiết bị của bạn</p>
+        <div id="midiFileName" class="midi-name">Chưa chọn file MIDI</div>
+      </div>
+      <input id="midiFileInput" type="file" accept=".mid,.midi,.kar,audio/midi" />
+    </div>
 
-        // Biến trạng thái toàn cục
-        let audioCtx = null;
-        let synth = null;
-        let sequencer = null;
-        let isLooping = false;
-        let isDraggingSeek = false;
-        let uiAnimationFrame = null;
+    <!-- Transport & Controls -->
+    <div class="card">
+      <div class="section-title">Điều khiển phát nhạc</div>
+      <div class="transport">
+        <button id="playPauseBtn" type="button" class="primary" disabled>▶ Phát</button>
+        <button id="stopBtn" type="button" disabled>⏹ Dừng</button>
+        <button id="loopBtn" type="button">🔁 Lặp: Tắt</button>
+      </div>
 
-        // Trạng thái 16 kênh
-        const channelStates = Array.from({ length: 16 }, (_, i) => ({
-            index: i,
-            program: 0,
-            isDrum: i === 9, // Kênh 10 (index 9) mặc định là bộ trống GM
-            muted: false,
-            solo: false,
-            activity: 0
-        }));
+      <div class="seek-row">
+        <span id="curTimeText">00:00</span>
+        <input id="seekSlider" type="range" min="0" max="100" value="0" step="0.1" disabled />
+        <span id="durTimeText">00:00</span>
+      </div>
 
-        // Tham chiếu DOM
-        const el = {
-            engineStatusDot: document.getElementById('engineStatusDot'),
-            engineStatusText: document.getElementById('engineStatusText'),
-            loaderSubtext: document.getElementById('loaderSubtext'),
-            retryLoadBtn: document.getElementById('retryLoadBtn'),
-            sf2FileInput: document.getElementById('sf2FileInput'),
-            downloadProgressBar: document.getElementById('downloadProgressBar'),
-            downloadDetailText: document.getElementById('downloadDetailText'),
-            downloadPercentText: document.getElementById('downloadPercentText'),
-            errorAlertBox: document.getElementById('errorAlertBox'),
-            errorTitle: document.getElementById('errorTitle'),
-            errorMessage: document.getElementById('errorMessage'),
-            midiDropZone: document.getElementById('midiDropZone'),
-            midiFileInput: document.getElementById('midiFileInput'),
-            loadedFileBadge: document.getElementById('loadedFileBadge'),
-            songTitle: document.getElementById('songTitle'),
-            songSubtitle: document.getElementById('songSubtitle'),
-            midiMetaBadge: document.getElementById('midiMetaBadge'),
-            seekSlider: document.getElementById('seekSlider'),
-            currentTimeText: document.getElementById('currentTimeText'),
-            totalTimeText: document.getElementById('totalTimeText'),
-            playPauseBtn: document.getElementById('playPauseBtn'),
-            playIcon: document.getElementById('playIcon'),
-            pauseIcon: document.getElementById('pauseIcon'),
-            playPauseText: document.getElementById('playPauseText'),
-            stopBtn: document.getElementById('stopBtn'),
-            loopBtn: document.getElementById('loopBtn'),
-            speedSelect: document.getElementById('speedSelect'),
-            volumeSlider: document.getElementById('volumeSlider'),
-            volumeText: document.getElementById('volumeText'),
-            channelsGrid: document.getElementById('channelsGrid'),
-            unmuteAllBtn: document.getElementById('unmuteAllBtn')
-        };
+      <div class="sliders">
+        <div class="slider-box">
+          <div class="slider-top">
+            <span>Âm lượng tổng</span>
+            <span id="volVal">80%</span>
+          </div>
+          <input id="volSlider" type="range" min="0" max="150" value="80" />
+        </div>
 
-        // Hàm định dạng giây thành MM:SS
-        function formatTime(seconds) {
-            if (!isFinite(seconds) || seconds < 0) return '00:00';
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        <div class="slider-box">
+          <div class="slider-top">
+            <span>Tốc độ phát</span>
+            <span id="speedVal">1.00x</span>
+          </div>
+          <input id="speedSlider" type="range" min="0.5" max="1.5" value="1" step="0.05" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 16 Channel Mixer -->
+    <div class="card">
+      <div class="section-title">Bộ trộn 16 kênh MIDI</div>
+      <div id="channelsGrid" class="channels-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    const WORKER_BASE = "https://midi.nhut990.workers.dev";
+    const DEFAULT_SF2_ORIGINAL =
+      "https://github.com/nhut990/files/releases/download/V1.0_SET_ORG/GeneralUser-GS.sf2";
+
+    const PROCESSOR_URLS = [
+      `${WORKER_BASE}/?url=${encodeURIComponent(
+        "https://raw.githubusercontent.com/nhut990/midi/refs/heads/main/spessasynth_processor.min.js"
+      )}`,
+      "https://raw.githubusercontent.com/nhut990/midi/refs/heads/main/spessasynth_processor.min.js",
+      "https://cdn.jsdelivr.net/gh/nhut990/midi@main/spessasynth_processor.min.js"
+    ];
+
+    const LAST_SF_URL_KEY = "spessa_last_sf2_url";
+
+    const GM_NAMES = [
+      "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano",
+      "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavinet",
+      "Celesta", "Glockenspiel", "Music Box", "Vibraphone",
+      "Marimba", "Xylophone", "Tubular Bells", "Dulcimer",
+      "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ",
+      "Reed Organ", "Accordion", "Harmonica", "Tango Accordion",
+      "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)",
+      "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar Harmonics",
+      "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass",
+      "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2",
+      "Violin", "Viola", "Cello", "Contrabass",
+      "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani",
+      "String Ensemble 1", "String Ensemble 2", "SynthStrings 1", "SynthStrings 2",
+      "Choir Aahs", "Voice Oohs", "Synth Voice", "Orchestra Hit",
+      "Trumpet", "Trombone", "Tuba", "Muted Trumpet",
+      "French Horn", "Brass Section", "SynthBrass 1", "SynthBrass 2",
+      "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax",
+      "Oboe", "English Horn", "Bassoon", "Clarinet",
+      "Piccolo", "Flute", "Recorder", "Pan Flute",
+      "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina",
+      "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)",
+      "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)",
+      "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)",
+      "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)",
+      "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)",
+      "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)",
+      "Sitar", "Banjo", "Shamisen", "Koto",
+      "Kalimba", "Bagpipe", "Fiddle", "Shanai",
+      "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock",
+      "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal",
+      "Guitar Fret Noise", "Breath Noise", "Seashore", "Bird Tweet",
+      "Telephone Ring", "Helicopter", "Applause", "Gunshot"
+    ];
+
+    // DOM elements
+    const statusEl = document.getElementById("engineStatus");
+    const sfStatusEl = document.getElementById("sfStatusText");
+    const progressBarEl = document.getElementById("sfProgressBar");
+    const progressTextEl = document.getElementById("sfProgressText");
+    const progressPctEl = document.getElementById("sfProgressPct");
+    const sfFileInput = document.getElementById("sfFileInput");
+    const sfUrlInput = document.getElementById("sfUrlInput");
+    const loadSfUrlBtn = document.getElementById("loadSfUrlBtn");
+    const reloadDefaultSfBtn = document.getElementById("reloadDefaultSfBtn");
+
+    const midiDropzone = document.getElementById("midiDropzone");
+    const midiFileInput = document.getElementById("midiFileInput");
+    const midiFileNameEl = document.getElementById("midiFileName");
+
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const loopBtn = document.getElementById("loopBtn");
+    const seekSlider = document.getElementById("seekSlider");
+    const curTimeText = document.getElementById("curTimeText");
+    const durTimeText = document.getElementById("durTimeText");
+
+    const volSlider = document.getElementById("volSlider");
+    const volVal = document.getElementById("volVal");
+    const speedSlider = document.getElementById("speedSlider");
+    const speedVal = document.getElementById("speedVal");
+    const channelsGrid = document.getElementById("channelsGrid");
+
+    let SpessaLib = null;
+    let audioCtx = null;
+    let synth = null;
+    let seq = null;
+    let sfLoaded = false;
+    let midiBuffer = null;
+    let isSeeking = false;
+    let isLooping = false;
+
+    const mutedChannels = new Set();
+    const soloChannels = new Set();
+    const channelUI = [];
+
+    function logUI(msg, isError = false) {
+      console[isError ? "error" : "log"]("[SpessaPlayer]", msg);
+      if (sfStatusEl) {
+        sfStatusEl.textContent = msg;
+        sfStatusEl.style.color = isError ? "#f87171" : "#94a3b8";
+      }
+    }
+
+    function setEngineStatus(msg, color = "#fbbf24") {
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:${color}">●</span> ${msg}`;
+      }
+    }
+
+    function formatTime(sec) {
+      if (!Number.isFinite(sec) || sec < 0) return "00:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function buildSfCandidateUrls(rawUrl) {
+      const clean = rawUrl.trim();
+      const viaWorker = `${WORKER_BASE}/?url=${encodeURIComponent(clean)}`;
+      const viaCorsProxy = `https://corsproxy.io/?${encodeURIComponent(clean)}`;
+      const viaAllOrigins = `https://api.allorigins.win/raw?url=${encodeURIComponent(clean)}`;
+
+      // Nếu URL đã trỏ thẳng tới Worker thì chỉ cần dùng nó
+      if (clean.startsWith(WORKER_BASE)) {
+        return [clean];
+      }
+
+      return [viaWorker, clean, viaCorsProxy, viaAllOrigins];
+    }
+
+    async function fetchWithFallback(urls, onProgress = null) {
+      const errors = [];
+
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        try {
+          logUI(`Đang tải từ nguồn ${i + 1}/${urls.length}...`);
+          const res = await fetch(url, { mode: "cors", cache: "no-store" });
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status} ${res.statusText}`);
+          }
+
+          if (!onProgress || !res.body) {
+            return await res.arrayBuffer();
+          }
+
+          const contentLength = res.headers.get("Content-Length");
+          const total = contentLength ? parseInt(contentLength, 10) : 0;
+          const reader = res.body.getReader();
+          const chunks = [];
+          let received = 0;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            received += value.length;
+            onProgress(received, total);
+          }
+
+          const merged = new Uint8Array(received);
+          let offset = 0;
+          for (const chunk of chunks) {
+            merged.set(chunk, offset);
+            offset += chunk.length;
+          }
+          return merged.buffer;
+        } catch (err) {
+          errors.push(`#${i + 1}: ${err.message}`);
         }
+      }
 
-        // Cập nhật trạng thái hệ thống trên header
-        function setEngineStatus(type, text) {
-            el.engineStatusText.textContent = text;
-            el.engineStatusDot.className = 'w-2.5 h-2.5 rounded-full ';
-            if (type === 'loading') {
-                el.engineStatusDot.classList.add('bg-amber-400', 'animate-pulse');
-            } else if (type === 'ready') {
-                el.engineStatusDot.classList.add('bg-emerald-400');
-            } else if (type === 'error') {
-                el.engineStatusDot.classList.add('bg-rose-500');
-            }
-        }
+      throw new Error("Tất cả nguồn đều lỗi -> " + errors.join(" | "));
+    }
 
-        // Hiển thị / Ẩn hộp lỗi
-        function showError(title, message) {
-            el.errorTitle.textContent = title;
-            el.errorMessage.textContent = message;
-            el.errorAlertBox.classList.remove('hidden');
-            el.retryLoadBtn.classList.remove('hidden');
-        }
+    function buildChannelMixer() {
+      channelsGrid.innerHTML = "";
+      channelUI.length = 0;
 
-        function hideError() {
-            el.errorAlertBox.classList.add('hidden');
-            el.retryLoadBtn.classList.add('hidden');
-        }
+      for (let ch = 0; ch < 16; ch++) {
+        const card = document.createElement("div");
+        card.className = "ch-card";
 
-        // Khởi tạo giao diện 16 kênh MIDI
-        function renderChannelsUI() {
-            el.channelsGrid.innerHTML = '';
-            channelStates.forEach((ch) => {
-                const card = document.createElement('div');
-                card.id = `channel-card-${ch.index}`;
-                card.className = 'bg-slate-950/70 border border-slate-800/90 rounded-xl p-3 flex flex-col justify-between gap-2.5 transition';
+        const head = document.createElement("div");
+        head.className = "ch-head";
+        head.innerHTML = `<span>CH ${ch + 1}${ch === 9 ? " (Drums)" : ""}</span><span class="ch-prog">Pgm 0</span>`;
 
-                const isDrumLabel = ch.isDrum
-                    ? '<span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">DRUMS</span>'
-                    : '';
+        const inst = document.createElement("div");
+        inst.className = "ch-inst";
+        inst.textContent = ch === 9 ? "Percussion / Drum Kit" : GM_NAMES[0];
 
-                card.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-xs font-bold text-slate-300">CH ${ch.index + 1}</span>
-                            ${isDrumLabel}
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <button data-action="mute" data-ch="${ch.index}" class="ch-mute-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer">
-                                M
-                            </button>
-                            <button data-action="solo" data-ch="${ch.index}" class="ch-solo-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer">
-                                S
-                            </button>
-                        </div>
-                    </div>
-                    <div id="ch-inst-${ch.index}" class="text-xs text-sky-300/90 font-medium truncate" title="${ch.isDrum ? 'Standard Drum Kit' : GM_INSTRUMENTS[0]}">
-                        ${ch.isDrum ? 'Standard Drum Kit' : GM_INSTRUMENTS[0]}
-                    </div>
-                    <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                        <div id="ch-bar-${ch.index}" class="activity-bar h-full bg-sky-400 rounded-full" style="width: 0%"></div>
-                    </div>
-                `;
-                el.channelsGrid.appendChild(card);
-            });
+        const velTrack = document.createElement("div");
+        velTrack.className = "vel-bar";
+        const velFill = document.createElement("div");
+        velFill.className = "vel-fill";
+        velTrack.appendChild(velFill);
 
-            // Gắn sự kiện Mute & Solo
-            el.channelsGrid.querySelectorAll('button[data-action]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const chIndex = Number(btn.dataset.ch);
-                    const action = btn.dataset.action;
-                    if (action === 'mute') toggleChannelMute(chIndex);
-                    if (action === 'solo') toggleChannelSolo(chIndex);
-                });
-            });
-        }
+        const btns = document.createElement("div");
+        btns.className = "ch-btns";
 
-        // Xử lý Mute / Solo kênh
-        function applyChannelMutes() {
-            if (!synth) return;
-            const anySolo = channelStates.some(c => c.solo);
-            channelStates.forEach(c => {
-                const shouldMute = anySolo ? !c.solo : c.muted;
-                try {
-                    synth.muteChannel(c.index, shouldMute);
-                } catch (e) {
-                    console.warn('Không thể đặt trạng thái mute kênh:', e);
-                }
+        const muteBtn = document.createElement("button");
+        muteBtn.type = "button";
+        muteBtn.textContent = "M";
+        muteBtn.title = "Tắt tiếng kênh";
 
-                // Cập nhật màu nút giao diện
-                const card = document.getElementById(`channel-card-${c.index}`);
-                const muteBtn = card.querySelector('.ch-mute-btn');
-                const soloBtn = card.querySelector('.ch-solo-btn');
+        const soloBtn = document.createElement("button");
+        soloBtn.type = "button";
+        soloBtn.textContent = "S";
+        soloBtn.title = "Chỉ nghe kênh này";
 
-                if (c.muted) {
-                    muteBtn.className = 'ch-mute-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-rose-600 text-white transition cursor-pointer';
-                } else {
-                    muteBtn.className = 'ch-mute-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer';
-                }
-
-                if (c.solo) {
-                    soloBtn.className = 'ch-solo-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-500 text-slate-950 transition cursor-pointer';
-                } else {
-                    soloBtn.className = 'ch-solo-btn px-2 py-0.5 text-[11px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer';
-                }
-
-                card.style.opacity = shouldMute ? '0.45' : '1';
-            });
-        }
-
-        function toggleChannelMute(chIndex) {
-            channelStates[chIndex].muted = !channelStates[chIndex].muted;
-            applyChannelMutes();
-        }
-
-        function toggleChannelSolo(chIndex) {
-            channelStates[chIndex].solo = !channelStates[chIndex].solo;
-            applyChannelMutes();
-        }
-
-        // Tải file AudioWorklet an toàn qua Fetch -> Blob URL (tránh lỗi CORS/MIME từ GitHub raw)
-        async function registerProcessorWorklet(ctx) {
-            el.loaderSubtext.textContent = 'Đang tải bộ xử lý âm thanh AudioWorklet...';
-            const response = await fetch(PROCESSOR_URL);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status} khi tải spessasynth_processor.min.js`);
-            }
-            const jsCode = await response.text();
-            const blob = new Blob([jsCode], { type: 'application/javascript' });
-            const blobUrl = URL.createObjectURL(blob);
-            await ctx.audioWorklet.addModule(blobUrl);
-            URL.revokeObjectURL(blobUrl);
-        }
-
-        // Tải SoundFont với thanh theo dõi tiến trình chi tiết
-        async function fetchSoundFontWithProgress(url) {
-            el.loaderSubtext.textContent = 'Đang tải GeneralUser-GS.sf2 (~30 MB)...';
-            el.downloadProgressBar.style.width = '0%';
-            el.downloadPercentText.textContent = '0%';
-            el.downloadDetailText.textContent = 'Đang kết nối...';
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status} khi tải SoundFont từ GitHub.`);
-            }
-
-            const contentLength = response.headers.get('Content-Length');
-            const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-            const reader = response.body.getReader();
-
-            let receivedBytes = 0;
-            const chunks = [];
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                chunks.push(value);
-                receivedBytes += value.length;
-
-                const receivedMB = (receivedBytes / (1024 * 1024)).toFixed(2);
-                if (totalBytes > 0) {
-                    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
-                    const percent = Math.min(100, Math.round((receivedBytes / totalBytes) * 100));
-                    el.downloadProgressBar.style.width = `${percent}%`;
-                    el.downloadPercentText.textContent = `${percent}%`;
-                    el.downloadDetailText.textContent = `${receivedMB} MB / ${totalMB} MB`;
-                } else {
-                    el.downloadProgressBar.style.width = '65%';
-                    el.downloadPercentText.textContent = 'Đang tải...';
-                    el.downloadDetailText.textContent = `${receivedMB} MB đã tải`;
-                }
-            }
-
-            // Ghép các chunk thành ArrayBuffer hoàn chỉnh
-            const fullBuffer = new Uint8Array(receivedBytes);
-            let offset = 0;
-            for (const chunk of chunks) {
-                fullBuffer.set(chunk, offset);
-                offset += chunk.length;
-            }
-
-            el.downloadProgressBar.style.width = '100%';
-            el.downloadPercentText.textContent = '100%';
-            el.downloadDetailText.textContent = `${(receivedBytes / (1024 * 1024)).toFixed(2)} MB (Hoàn tất)`;
-
-            return fullBuffer.buffer;
-        }
-
-        // Khởi tạo bộ tổng hợp âm thanh SpessaSynth
-        async function initSynthesizer(sf2ArrayBuffer) {
-            setEngineStatus('loading', 'Đang nạp SoundFont vào bộ nhớ...');
-            el.loaderSubtext.textContent = 'Đang khởi tạo bộ tổng hợp âm thanh...';
-
-            if (!audioCtx) {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContextClass();
-                await registerProcessorWorklet(audioCtx);
-            }
-
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-
-            // Tạo Synthetizer với buffer của GeneralUser-GS.sf2
-            synth = new Synthetizer(audioCtx.destination, sf2ArrayBuffer);
-            await synth.isReady;
-
-            // Lắng nghe sự kiện từ bộ tổng hợp để cập nhật UI nhạc cụ và đèn nháy nốt nhạc
-            if (synth.eventHandler) {
-                synth.eventHandler.addEvent('programchange', 'ui-program', (e) => {
-                    const ch = e.channel;
-                    const prog = e.program;
-                    if (channelStates[ch]) {
-                        channelStates[ch].program = prog;
-                        const instEl = document.getElementById(`ch-inst-${ch}`);
-                        if (instEl && !channelStates[ch].isDrum) {
-                            const name = GM_INSTRUMENTS[prog] || `Program #${prog}`;
-                            instEl.textContent = name;
-                            instEl.title = name;
-                        }
-                    }
-                });
-
-                synth.eventHandler.addEvent('noteon', 'ui-noteon', (e) => {
-                    const ch = e.channel;
-                    if (channelStates[ch] && e.velocity > 0) {
-                        channelStates[ch].activity = Math.min(100, (e.velocity / 127) * 100);
-                    }
-                });
-            }
-
-            setEngineStatus('ready', 'Sẵn sàng phát nhạc');
-            el.loaderSubtext.textContent = 'Đã nạp thành công SoundFont GeneralUser-GS! Hãy chọn file .mid để nghe.';
-            hideError();
-        }
-
-        // Quy trình khởi động tự động
-        async function bootFromRemoteLinks() {
-            hideError();
-            setEngineStatus('loading', 'Đang tải tài nguyên...');
-            try {
-                if (!audioCtx) {
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    audioCtx = new AudioContextClass();
-                    await registerProcessorWorklet(audioCtx);
-                }
-                const sf2Buffer = await fetchSoundFontWithProgress(SOUNDFONT_URL);
-                await initSynthesizer(sf2Buffer);
-            } catch (err) {
-                console.error('Lỗi khởi tạo từ link từ xa:', err);
-                setEngineStatus('error', 'Lỗi tải từ GitHub');
-                el.loaderSubtext.textContent = 'Không thể tải tự động do chặn CORS hoặc mạng. Bạn có thể chọn file .sf2 từ máy.';
-                showError(
-                    'Không thể tải tự động file từ GitHub',
-                    `Chi tiết: ${err.message}. GitHub Releases đôi khi chuyển hướng sang domain không hỗ trợ CORS trên trình duyệt. Bạn hãy tải file GeneralUser-GS.sf2 về máy rồi bấm nút "Chọn file .SF2 trên máy" ở góc phải phía trên để nạp trực tiếp.`
-                );
-            }
-        }
-
-        // Xử lý khi người dùng chọn file .SF2 thủ công từ máy
-        el.sf2FileInput.addEventListener('change', async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            hideError();
-            setEngineStatus('loading', 'Đang đọc file SF2...');
-            el.loaderSubtext.textContent = `Đang nạp file nội bộ: ${file.name}`;
-            el.downloadProgressBar.style.width = '50%';
-            el.downloadPercentText.textContent = 'Đang đọc...';
-
-            try {
-                const buffer = await file.arrayBuffer();
-                const sizeMB = (buffer.byteLength / (1024 * 1024)).toFixed(2);
-                el.downloadProgressBar.style.width = '100%';
-                el.downloadPercentText.textContent = '100%';
-                el.downloadDetailText.textContent = `${sizeMB} MB (${file.name})`;
-
-                await initSynthesizer(buffer);
-            } catch (err) {
-                console.error('Lỗi đọc file SF2 nội bộ:', err);
-                setEngineStatus('error', 'File SF2 không hợp lệ');
-                showError('Lỗi nạp file SoundFont', err.message);
-            }
+        muteBtn.addEventListener("click", () => {
+          if (mutedChannels.has(ch)) {
+            mutedChannels.delete(ch);
+            muteBtn.classList.remove("active-mute");
+          } else {
+            mutedChannels.add(ch);
+            muteBtn.classList.add("active-mute");
+          }
+          applyChannelMask();
         });
 
-        // Nạp và phát file MIDI
-        async function loadMidiFile(file) {
-            if (!synth) {
-                showError(
-                    'Chưa sẵn sàng bộ âm thanh',
-                    'Vui lòng đợi quá trình tải SoundFont hoàn tất (hoặc nạp file .sf2 thủ công) trước khi mở file MIDI.'
-                );
-                return;
-            }
+        soloBtn.addEventListener("click", () => {
+          if (soloChannels.has(ch)) {
+            soloChannels.delete(ch);
+            soloBtn.classList.remove("active-solo");
+          } else {
+            soloChannels.add(ch);
+            soloBtn.classList.add("active-solo");
+          }
+          applyChannelMask();
+        });
 
-            try {
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    await audioCtx.resume();
-                }
+        btns.append(muteBtn, soloBtn);
+        card.append(head, inst, velTrack, btns);
+        channelsGrid.appendChild(card);
 
-                const midiBuffer = await file.arrayBuffer();
+        channelUI.push({
+          progEl: head.querySelector(".ch-prog"),
+          instEl: inst,
+          velEl: velFill,
+          velValue: 0
+        });
+      }
+    }
 
-                // Reset trạng thái hiển thị 16 kênh
-                channelStates.forEach(c => {
-                    c.program = 0;
-                    c.activity = 0;
-                    const instEl = document.getElementById(`ch-inst-${c.index}`);
-                    if (instEl) {
-                        instEl.textContent = c.isDrum ? 'Standard Drum Kit' : GM_INSTRUMENTS[0];
-                    }
-                });
+    function applyChannelMask() {
+      if (!synth) return;
+      const hasSolo = soloChannels.size > 0;
+      for (let ch = 0; ch < 16; ch++) {
+        const shouldMute = hasSolo ? !soloChannels.has(ch) : mutedChannels.has(ch);
+        if (typeof synth.muteChannel === "function") {
+          synth.muteChannel(ch, shouldMute);
+        }
+      }
+    }
 
-                // Dừng sequencer cũ nếu đang chạy
-                if (sequencer) {
-                    sequencer.pause();
-                }
+    function bindSynthEvents() {
+      if (!synth || !synth.eventHandler) return;
 
-                // Khởi tạo Sequencer mới với file MIDI vừa nạp
-                sequencer = new Sequencer([{ binary: midiBuffer, altName: file.name }], synth);
-                sequencer.loop = isLooping;
-                sequencer.playbackRate = parseFloat(el.speedSelect.value) || 1;
+      synth.eventHandler.addEvent("programChange", (e) => {
+        const ch = e.channel;
+        const prog = e.program ?? 0;
+        const ui = channelUI[ch];
+        if (!ui) return;
+        ui.progEl.textContent = `Pgm ${prog}`;
+        ui.instEl.textContent = ch === 9 ? `Drum Kit #${prog + 1}` : (GM_NAMES[prog] || `Program ${prog}`);
+      });
 
-                // Cập nhật thông tin giao diện
-                const cleanName = file.name.replace(/\.(mid|midi|kar|rmi)$/i, '');
-                el.songTitle.textContent = cleanName;
-                el.songSubtitle.textContent = `Tệp: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                el.loadedFileBadge.textContent = `Đã nạp: ${file.name}`;
-                el.loadedFileBadge.classList.remove('hidden');
+      synth.eventHandler.addEvent("noteOn", (e) => {
+        const ui = channelUI[e.channel];
+        if (!ui) return;
+        ui.velValue = Math.min(100, Math.round(((e.velocity ?? 90) / 127) * 100));
+        ui.velEl.style.width = `${ui.velValue}%`;
+      });
 
-                const duration = sequencer.duration || 0;
-                const tracksCount = sequencer.midiData?.tracks?.length || '--';
-                const tempo = sequencer.midiData?.tempoChanges?.[0]?.tempo
-                    ? Math.round(sequencer.midiData.tempoChanges[0].tempo)
-                    : 120;
+      synth.eventHandler.addEvent("noteOff", (e) => {
+        const ui = channelUI[e.channel];
+        if (!ui) return;
+        ui.velValue = Math.max(0, ui.velValue - 45);
+        ui.velEl.style.width = `${ui.velValue}%`;
+      });
+    }
 
-                el.midiMetaBadge.textContent = `${tempo} BPM • ${tracksCount} Tracks`;
-                el.seekSlider.max = duration;
-                el.seekSlider.value = 0;
-                el.seekSlider.disabled = false;
-                el.totalTimeText.textContent = formatTime(duration);
-                el.currentTimeText.textContent = '00:00';
+    function updateTransportButtons() {
+      const canPlay = sfLoaded && Boolean(midiBuffer) && Boolean(seq);
+      playPauseBtn.disabled = !canPlay;
+      stopBtn.disabled = !canPlay;
+      seekSlider.disabled = !canPlay;
 
-                el.playPauseBtn.disabled = false;
-                el.stopBtn.disabled = false;
+      if (!seq) {
+        playPauseBtn.textContent = "▶ Phát";
+        return;
+      }
 
-                // Tự động phát ngay sau khi nạp
-                sequencer.play();
-                updatePlayPauseButtonUI(true);
-                startUILoop();
+      playPauseBtn.textContent = seq.paused ? "▶ Phát" : "⏸ Tạm dừng";
+    }
 
-            } catch (err) {
-                console.error('Lỗi đọc file MIDI:', err);
-                showError('Không thể đọc file MIDI', `File "${file.name}" có thể bị hỏng hoặc sai định dạng MIDI chuẩn. (${err.message})`);
-            }
+    async function initAudioEngine() {
+      if (synth) return;
+
+      try {
+        setEngineStatus("Đang nạp SpessaSynth...", "#38bdf8");
+        SpessaLib = await import("https://cdn.jsdelivr.net/npm/spessasynth_lib@3.29.1/+esm");
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+
+        setEngineStatus("Đang tải AudioWorklet...", "#38bdf8");
+        const workletBuf = await fetchWithFallback(PROCESSOR_URLS);
+        const blob = new Blob([workletBuf], { type: "application/javascript" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        await audioCtx.audioWorklet.addModule(blobUrl);
+        setEngineStatus("Worklet sẵn sàng (Chờ SF2)", "#38bdf8");
+      } catch (err) {
+        setEngineStatus("Lỗi khởi tạo Engine", "#f87171");
+        logUI(`Lỗi khởi tạo Audio Engine: ${err.message}`, true);
+        throw err;
+      }
+    }
+
+    async function loadSoundFontBuffer(sf2Buffer, label = "SoundFont") {
+      try {
+        await initAudioEngine();
+
+        if (!synth) {
+          synth = new SpessaLib.Synthetizer(audioCtx.destination, sf2Buffer);
+          await synth.isReady;
+          bindSynthEvents();
+          applyVolumeAndSpeed();
+        } else {
+          await synth.soundBankManager.addSoundBank(sf2Buffer, "main");
         }
 
-        // Cập nhật giao diện nút Play/Pause
-        function updatePlayPauseButtonUI(isPlaying) {
-            if (isPlaying) {
-                el.playIcon.classList.add('hidden');
-                el.pauseIcon.classList.remove('hidden');
-                el.playPauseText.textContent = 'Tạm dừng';
-            } else {
-                el.playIcon.classList.remove('hidden');
-                el.pauseIcon.classList.add('hidden');
-                el.playPauseText.textContent = 'Phát nhạc';
-            }
+        if (!seq && SpessaLib.Sequencer) {
+          seq = new SpessaLib.Sequencer(synth);
+          seq.loop = isLooping;
+          if (midiBuffer) {
+            await loadMidiIntoSequencer(midiBuffer);
+          }
         }
 
-        // Vòng lặp cập nhật thanh thời gian & thanh nháy 16 kênh
-        function startUILoop() {
-            if (uiAnimationFrame) cancelAnimationFrame(uiAnimationFrame);
+        sfLoaded = true;
+        const mb = (sf2Buffer.byteLength / 1048576).toFixed(2);
+        if (progressBarEl) progressBarEl.style.width = "100%";
+        if (progressPctEl) progressPctEl.textContent = "100%";
+        if (progressTextEl) progressTextEl.textContent = `${mb} MB / ${mb} MB`;
 
-            const tick = () => {
-                if (sequencer) {
-                    const current = sequencer.currentTime || 0;
-                    const duration = sequencer.duration || 1;
+        setEngineStatus(`Sẵn sàng (${label})`, "#22c55e");
+        logUI(`Đã nạp ${label} (${mb} MB). Bạn có thể chọn hoặc phát file MIDI.`);
+        updateTransportButtons();
+      } catch (err) {
+        setEngineStatus("Lỗi nạp SoundFont", "#f87171");
+        logUI(`Không nạp được SoundFont: ${err.message}`, true);
+      }
+    }
 
-                    if (!isDraggingSeek) {
-                        el.seekSlider.value = current;
-                        el.currentTimeText.textContent = formatTime(current);
-                    }
+    async function downloadAndLoadSoundFont(targetUrl, label = "Worker SF2") {
+      try {
+        await initAudioEngine();
 
-                    // Kiểm tra nếu đã phát hết bài và không bật Loop
-                    if (!sequencer.loop && current >= duration - 0.05 && sequencer.paused) {
-                        updatePlayPauseButtonUI(false);
-                    } else {
-                        updatePlayPauseButtonUI(!sequencer.paused);
-                    }
-                }
+        if (progressBarEl) progressBarEl.style.width = "0%";
+        if (progressPctEl) progressPctEl.textContent = "0%";
+        if (progressTextEl) progressTextEl.textContent = "0.00 MB / -- MB";
 
-                // Giảm dần mức độ nháy của các thanh hoạt động kênh
-                channelStates.forEach(c => {
-                    if (c.activity > 0) {
-                        c.activity = Math.max(0, c.activity - 4.5);
-                    }
-                    const bar = document.getElementById(`ch-bar-${c.index}`);
-                    if (bar) {
-                        bar.style.width = `${c.activity}%`;
-                    }
-                });
+        const candidates = buildSfCandidateUrls(targetUrl);
+        const buf = await fetchWithFallback(candidates, (received, total) => {
+          const loadedMB = (received / 1048576).toFixed(2);
+          if (total > 0) {
+            const totalMB = (total / 1048576).toFixed(2);
+            const pct = Math.min(100, Math.round((received / total) * 100));
+            if (progressTextEl) progressTextEl.textContent = `${loadedMB} MB / ${totalMB} MB`;
+            if (progressPctEl) progressPctEl.textContent = `${pct}%`;
+            if (progressBarEl) progressBarEl.style.width = `${pct}%`;
+          } else {
+            if (progressTextEl) progressTextEl.textContent = `${loadedMB} MB / ~31.00 MB`;
+            const est = Math.min(95, Math.round((received / (31 * 1048576)) * 100));
+            if (progressPctEl) progressPctEl.textContent = `${est}%`;
+            if (progressBarEl) progressBarEl.style.width = `${est}%`;
+          }
+        });
 
-                uiAnimationFrame = requestAnimationFrame(tick);
-            };
+        await loadSoundFontBuffer(buf, label);
+      } catch (err) {
+        setEngineStatus("Cần nạp SF2 thủ công", "#fbbf24");
+        logUI(`Tải tự động thất bại (${err.message}). Hãy thử nút "Chọn file .SF2 trên máy".`, true);
+      }
+    }
 
-            uiAnimationFrame = requestAnimationFrame(tick);
+    async function loadMidiIntoSequencer(arrayBuffer) {
+      if (!seq || !arrayBuffer) return;
+      seq.loadNewSongList([{ binary: arrayBuffer, name: midiFileNameEl.textContent || "MIDI" }]);
+      seq.pause();
+      durTimeText.textContent = formatTime(seq.duration || 0);
+      curTimeText.textContent = "00:00";
+      seekSlider.max = seq.duration || 100;
+      seekSlider.value = 0;
+      updateTransportButtons();
+    }
+
+    async function handleMidiFile(file) {
+      if (!file) return;
+      midiBuffer = await file.arrayBuffer();
+      midiFileNameEl.textContent = `Đã chọn: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+
+      if (!sfLoaded) {
+        logUI("Đã nhận file MIDI. Đang chờ SoundFont hoàn tất để phát...", false);
+      }
+
+      if (seq) {
+        await loadMidiIntoSequencer(midiBuffer);
+      }
+      updateTransportButtons();
+    }
+
+    function applyVolumeAndSpeed() {
+      const vol = Number(volSlider.value) / 100;
+      const spd = Number(speedSlider.value);
+      volVal.textContent = `${volSlider.value}%`;
+      speedVal.textContent = `${spd.toFixed(2)}x`;
+
+      if (synth) {
+        synth.setMasterGain(vol);
+      }
+      if (seq) {
+        seq.playbackRate = spd;
+      }
+    }
+
+    // Events
+    reloadDefaultSfBtn.addEventListener("click", () => {
+      downloadAndLoadSoundFont(DEFAULT_SF2_ORIGINAL, "GeneralUser-GS (Worker)");
+    });
+
+    loadSfUrlBtn.addEventListener("click", () => {
+      const val = (sfUrlInput.value || "").trim();
+      if (!val) {
+        logUI("Vui lòng nhập link .sf2 hợp lệ.", true);
+        return;
+      }
+      try {
+        const parsed = new URL(val);
+        localStorage.setItem(LAST_SF_URL_KEY, val);
+        downloadAndLoadSoundFont(val, parsed.hostname);
+      } catch {
+        logUI("Link không đúng định dạng URL.", true);
+      }
+    });
+
+    sfUrlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        loadSfUrlBtn.click();
+      }
+    });
+
+    sfFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      logUI(`Đang đọc file từ máy: ${file.name}...`);
+      const buf = await file.arrayBuffer();
+      await loadSoundFontBuffer(buf, file.name);
+    });
+
+    midiDropzone.addEventListener("click", () => midiFileInput.click());
+    midiFileInput.addEventListener("change", (e) => handleMidiFile(e.target.files?.[0]));
+
+    midiDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      midiDropzone.classList.add("dragover");
+    });
+
+    midiDropzone.addEventListener("dragleave", () => {
+      midiDropzone.classList.remove("dragover");
+    });
+
+    midiDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      midiDropzone.classList.remove("dragover");
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleMidiFile(file);
+    });
+
+    playPauseBtn.addEventListener("click", async () => {
+      if (!seq) return;
+      if (audioCtx && audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
+      if (seq.paused) {
+        seq.play();
+      } else {
+        seq.pause();
+      }
+      updateTransportButtons();
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (!seq) return;
+      seq.pause();
+      seq.currentTime = 0;
+      curTimeText.textContent = "00:00";
+      seekSlider.value = 0;
+      updateTransportButtons();
+    });
+
+    loopBtn.addEventListener("click", () => {
+      isLooping = !isLooping;
+      loopBtn.textContent = isLooping ? "🔁 Lặp: Bật" : "🔁 Lặp: Tắt";
+      if (seq) seq.loop = isLooping;
+    });
+
+    seekSlider.addEventListener("input", () => {
+      isSeeking = true;
+      curTimeText.textContent = formatTime(Number(seekSlider.value));
+    });
+
+    seekSlider.addEventListener("change", () => {
+      if (seq) {
+        seq.currentTime = Number(seekSlider.value);
+      }
+      isSeeking = false;
+    });
+
+    volSlider.addEventListener("input", applyVolumeAndSpeed);
+    speedSlider.addEventListener("input", applyVolumeAndSpeed);
+
+    // UI loop for playback progress & velocity decay
+    setInterval(() => {
+      if (seq && !isSeeking) {
+        const cur = seq.currentTime || 0;
+        const dur = seq.duration || 0;
+        seekSlider.max = dur > 0 ? dur : 100;
+        seekSlider.value = cur;
+        curTimeText.textContent = formatTime(cur);
+        durTimeText.textContent = formatTime(dur);
+        updateTransportButtons();
+      }
+
+      for (const ui of channelUI) {
+        if (ui.velValue > 0) {
+          ui.velValue = Math.max(0, ui.velValue - 8);
+          ui.velEl.style.width = `${ui.velValue}%`;
         }
+      }
+    }, 80);
 
-        // Sự kiện tương tác người dùng
-        el.retryLoadBtn.addEventListener('click', bootFromRemoteLinks);
-
-        // Kích hoạt AudioContext khi người dùng click lần đầu trên trang (tuân thủ chính sách Autoplay của trình duyệt)
-        document.addEventListener('pointerdown', async () => {
-            if (audioCtx && audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-        }, { once: false });
-
-        // Kéo thả & chọn file MIDI
-        el.midiDropZone.addEventListener('click', () => el.midiFileInput.click());
-        el.midiFileInput.addEventListener('change', (e) => {
-            const file = e.target.files?.[0];
-            if (file) loadMidiFile(file);
-        });
-
-        el.midiDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            el.midiDropZone.classList.add('border-sky-400', 'bg-slate-800/80');
-        });
-
-        el.midiDropZone.addEventListener('dragleave', () => {
-            el.midiDropZone.classList.remove('border-sky-400', 'bg-slate-800/80');
-        });
-
-        el.midiDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            el.midiDropZone.classList.remove('border-sky-400', 'bg-slate-800/80');
-            const file = e.dataTransfer?.files?.[0];
-            if (file) loadMidiFile(file);
-        });
-
-        // Điều khiển Play / Pause
-        el.playPauseBtn.addEventListener('click', async () => {
-            if (!sequencer) return;
-            if (audioCtx && audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-            if (sequencer.paused) {
-                sequencer.play();
-                updatePlayPauseButtonUI(true);
-            } else {
-                sequencer.pause();
-                updatePlayPauseButtonUI(false);
-            }
-        });
-
-        // Điều khiển Stop
-        el.stopBtn.addEventListener('click', () => {
-            if (!sequencer) return;
-            sequencer.pause();
-            sequencer.currentTime = 0;
-            el.seekSlider.value = 0;
-            el.currentTimeText.textContent = '00:00';
-            updatePlayPauseButtonUI(false);
-        });
-
-        // Điều khiển Loop
-        el.loopBtn.addEventListener('click', () => {
-            isLooping = !isLooping;
-            if (sequencer) {
-                sequencer.loop = isLooping;
-            }
-            if (isLooping) {
-                el.loopBtn.className = 'p-2.5 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/50 transition cursor-pointer';
-            } else {
-                el.loopBtn.className = 'p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition cursor-pointer';
-            }
-        });
-
-        // Tua thời gian (Seek)
-        el.seekSlider.addEventListener('input', () => {
-            isDraggingSeek = true;
-            el.currentTimeText.textContent = formatTime(parseFloat(el.seekSlider.value));
-        });
-
-        el.seekSlider.addEventListener('change', () => {
-            if (sequencer) {
-                sequencer.currentTime = parseFloat(el.seekSlider.value);
-            }
-            isDraggingSeek = false;
-        });
-
-        // Tốc độ phát
-        el.speedSelect.addEventListener('change', () => {
-            if (sequencer) {
-                sequencer.playbackRate = parseFloat(el.speedSelect.value);
-            }
-        });
-
-        // Âm lượng tổng
-        el.volumeSlider.addEventListener('input', () => {
-            const val = parseFloat(el.volumeSlider.value);
-            el.volumeText.textContent = `${Math.round(val * 100)}%`;
-            if (synth && typeof synth.setMainVolume === 'function') {
-                synth.setMainVolume(val);
-            }
-        });
-
-        // Bật lại tất cả kênh
-        el.unmuteAllBtn.addEventListener('click', () => {
-            channelStates.forEach(c => {
-                c.muted = false;
-                c.solo = false;
-            });
-            applyChannelMutes();
-        });
-
-        // Khởi chạy giao diện kênh và tải tài nguyên ngay khi mở trang
-        renderChannelsUI();
-        bootFromRemoteLinks();
-    </script>
+    // Init
+    const savedSfUrl = localStorage.getItem(LAST_SF_URL_KEY);
+    if (savedSfUrl) {
+      sfUrlInput.value = savedSfUrl;
+    }
+    buildChannelMixer();
+    downloadAndLoadSoundFont(DEFAULT_SF2_ORIGINAL, "GeneralUser-GS (Worker)");
+  </script>
 </body>
 </html>
