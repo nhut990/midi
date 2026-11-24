@@ -30,9 +30,9 @@
     </div>
 
     <script type="module">
-        // 1. Dùng đúng tên lớp mới là WorkletSynthesizer
-        import { WorkletSynthesizer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@latest/+esm';
-        import { Sequencer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@latest/+esm';
+        // 1. QUAN TRỌNG: Khóa phiên bản thư viện để đồng bộ với file worklet bạn đã tải
+        import { WorkletSynthesizer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@3.20.6/+esm';
+        import { Sequencer } from 'https://cdn.jsdelivr.net/npm/spessasynth_lib@3.20.6/+esm';
 
         const statusEl = document.getElementById('status');
         const initBtn = document.getElementById('initBtn');
@@ -44,7 +44,7 @@
         let seq;
 
         initBtn.addEventListener('click', async () => {
-            // 2. Tạo và resume AudioContext NGAY LẬP TỨC trong sự kiện click (chuẩn Safari)
+            // 2. Tạo và resume AudioContext ngay lập tức trong sự kiện click (chuẩn Safari)
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') {
                 await audioCtx.resume();
@@ -54,16 +54,20 @@
             statusEl.textContent = "Đang tải âm thanh (SF2)... Vui lòng chờ...";
             
             try {
-                // Link SF2 dự phòng (dung lượng lớn hơn nhưng ổn định trên CDN)
+                // Link SF2 dự phòng
                 const sfUrl = 'https://cdn.jsdelivr.net/gh/mrbumpy409/GeneralUser-GS@main/GeneralUser-GS.sf2'; 
                 const sfBuffer = await (await fetch(sfUrl)).arrayBuffer();
 
                 statusEl.textContent = "Đang tải bộ xử lý...";
+                // 3. Đảm bảo đường dẫn tương đối chính xác đến file worklet bạn đã up
                 const workletUrl = './spessasynth_processor.min.js';
                 await audioCtx.audioWorklet.addModule(workletUrl);
 
-                // 3. Khởi tạo WorkletSynthesizer
-                synth = new WorkletSynthesizer(audioCtx.destination, sfBuffer);
+                // 4. Khởi tạo WorkletSynthesizer (không truyền sfBuffer vào đây)
+                synth = new WorkletSynthesizer(audioCtx);
+
+                // 5. Tải soundfont thông qua phương thức của synthesizer
+                await synth.soundBankManager.addSoundBank(sfBuffer, 'main');
 
                 statusEl.textContent = "Sẵn sàng! Hãy chọn file MIDI.";
                 initBtn.style.display = 'none';
